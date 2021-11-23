@@ -1,10 +1,11 @@
 import { Photo } from '../types/foto';
 import { storage } from '../libs/firebase';
-import { ref, listAll, getDownloadURL } from 'firebase/storage';
+import { ref, listAll, getDownloadURL, uploadBytes } from 'firebase/storage';
+import {v4 as createId} from 'uuid'
 
 export const getAll = async () => {
     let list:Photo[] = [];
-    const imagesFolder = ref(storage, 'images');
+    const imagesFolder = ref(storage, 'image');
     const photoList = await listAll(imagesFolder);
     for(let i in photoList.items) {
         let photoUrl = await getDownloadURL(photoList.items[i])
@@ -16,4 +17,19 @@ export const getAll = async () => {
     }
 
     return list;
+}
+
+export const insert = async (file: File) => {
+    if(['image/jpeg', 'image/png', 'image/jpg'].includes(file.type)) {
+        let randomName = createId();
+        let newFile = ref(storage, `image/${randomName}`);
+        let upload = await uploadBytes(newFile, file);
+        let photoUrl = await getDownloadURL(upload.ref);
+        return {
+            name: upload.ref.name,
+            url: photoUrl,
+        } as Photo;
+    } else {
+        return new Error('Não consigo subir esse tipo de arquivo');
+    }
 }
